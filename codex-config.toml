@@ -1,0 +1,16 @@
+model = "deepseek-v4.1-flash"
+model_provider = "matrixllmrouter"
+# Gateway quirk (2026-10-01): its Responses->Chat translation mishandles the
+# `reasoning.summary` key and produces an object-typed reasoning_effort that
+# its own backend rejects. Omitting the summary key (reasoning: {}) passes.
+model_reasoning_summary = "none"
+# The docker container is the isolation boundary; codex's own sandbox cannot
+# unshare user namespaces inside an unprivileged container and is disabled.
+sandbox_mode = "danger-full-access"
+
+[model_providers.matrixllmrouter]
+name = "MatrixLLM Router"
+base_url = "https://matrixllmrouter.gewu-lab.ai/v1"
+env_key = "MATRIXLLMROUTER_API_KEY"
+requires_openai_auth = false
+wire_api = "responses"

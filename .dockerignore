@@ -2,3 +2,5 @@
 !Dockerfile
 !requirements.txt
 !smoke.py
+!api_smoke.py
+!codex-config.toml

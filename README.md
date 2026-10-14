@@ -44,6 +44,24 @@ Actual Codex tasks need authentication, network access, and writable workspace
 and user configuration directories supplied at runtime. No credentials or user
 configuration are included in the image.
 
+## Codex gateway smoke test
+
+Set `RUN_MODE=codex-api` to run a small agent task through MatrixLLMRouter using
+the included provider configuration and the `deepseek-v4.1-flash` model. The
+configuration retains the existing gateway workaround `model_reasoning_summary
+= "none"`; no sampling settings or reasoning effort are added.
+
+Supply the gateway credential at runtime using `MATRIXLLMROUTER_API_KEY` or the
+platform-managed `PLATFORM_ENDPOINT_KEY`. An optional `EXPECTED_API_KEY_SHA256`
+checks that the platform credential matches an existing local credential before
+any model call. Only the fingerprint goes in the task specification.
+
+The test creates a writable workspace and Codex state directory under
+`PLATFORM_OUTPUT_PATH`, asks Codex to calculate 37 times 43 using Python, and
+checks the resulting `answer.json` and recorded shell tool call. It saves
+redacted event logs and returns flat metrics, including `ok`, the model,
+Codex version, and token usage. This test makes real model requests.
+
 ## Platform builds
 
 Use this repository's HTTPS clone URL, a full 40-character commit ID, and
