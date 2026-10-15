@@ -29,7 +29,6 @@ RUN python -m pip install --no-cache-dir --root-user-action=ignore -r /app/requi
     && codex --version
 
 COPY smoke.py /app/smoke.py
-COPY api_smoke.py codex-config.toml /app/
 RUN groupadd --gid 2001 runner \
     && useradd --uid 2001 --gid 2001 --create-home --shell /bin/bash runner
 USER 2001:2001

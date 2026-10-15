@@ -46,10 +46,15 @@ configuration are included in the image.
 
 ## Codex gateway smoke test
 
-Set `RUN_MODE=codex-api` to run a small agent task through MatrixLLMRouter using
-the included provider configuration and the `deepseek-v4.1-flash` model. The
-configuration retains the existing gateway workaround `model_reasoning_summary
-= "none"`; no sampling settings or reasoning effort are added.
+The image supplies the environment. Task code and provider configuration live
+under `tasks/codex-api-smoke/` and are excluded from the image build context.
+Supply these files to the container at runtime and override the command with
+`python /task/api_smoke.py`, where `/task` is their mounted location.
+
+The example uses MatrixLLMRouter and `deepseek-v4.1-flash`, retaining the gateway
+workaround `model_reasoning_summary = "none"`. No sampling settings or reasoning
+effort are added. Updating task files or API configuration does not require
+rebuilding the environment image.
 
 Supply the gateway credential at runtime using `MATRIXLLMROUTER_API_KEY` or the
 platform-managed `PLATFORM_ENDPOINT_KEY`. An optional `EXPECTED_API_KEY_SHA256`

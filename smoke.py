@@ -74,9 +74,4 @@ def main():
 
 
 if __name__ == "__main__":
-    if os.environ.get("RUN_MODE") == "codex-api":
-        from api_smoke import main as api_main
-
-        api_main()
-    else:
-        main()
+    main()

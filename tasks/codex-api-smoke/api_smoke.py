@@ -18,7 +18,7 @@ def main():
     config_bytes = source.read_bytes()
     config = tomllib.loads(config_bytes.decode())
     provider = config["model_providers"][config["model_provider"]]
-    key = os.environ.get(provider["env_key"]) or os.environ.get("PLATFORM_ENDPOINT_KEY")
+    key = (os.environ.get(provider["env_key"]) or os.environ.get("PLATFORM_ENDPOINT_KEY") or "").strip()
     if not key:
         raise RuntimeError("No gateway credential was injected into the task")
 
