@@ -46,7 +46,7 @@ COPY harbor-rollout/image-source/h200-image-inventory.json /opt/qrepair/h200-ima
 RUN chmod 0755 /usr/local/bin/codex /usr/local/bin/codex-code-mode-host && \
     chmod 0644 /home/agent/.codex/config.toml /opt/qrepair/* && \
     chown -R agent:agent /home/agent/.codex && \
-    mkdir -p /workspace && chmod 1777 /workspace && \
+    mkdir -p /opt/qrepair/workspace && chmod 1777 /opt/qrepair/workspace && \
     python3 /opt/qrepair/verify-image.py
 COPY harbor-rollout/runtime/ /opt/harbor-rollout/
 RUN chmod -R a+rX /opt/harbor-rollout && \
@@ -58,5 +58,5 @@ RUN chmod -R a+rX /opt/harbor-rollout && \
 # trial's persistent sandbox. Fixed task paths therefore need no prompt rewriting.
 # Intentionally do not put /opt/harbor-venv/bin on PATH: solver tools keep Python 3.11.2.
 USER agent
-WORKDIR /workspace
+WORKDIR /opt/qrepair/workspace
 ENTRYPOINT ["/opt/harbor-venv/bin/python", "/opt/harbor-rollout/entry.py"]

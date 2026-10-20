@@ -14,7 +14,7 @@ Preserved solver components:
 - All 24 non-bootstrap Python distributions installed in the final source image
   are pinned in scientific-requirements.lock. This includes the extra scientific
   packages from the image's later docker-commit layer.
-- The agent user, /workspace and provider settings are retained. The final image
+- The agent user and provider settings are retained. The final image
   adds the platform rollout entrypoint /opt/harbor-venv/bin/python
   /opt/harbor-rollout/entry.py, copying runtime code from harbor-rollout/runtime/.
 
@@ -46,7 +46,7 @@ Explicit differences from the H200 image:
   controls were added. The rollout adapter supplies its Responses-to-Chat bridge.
 - The coordinator Python distribution changes from Anaconda CPython 3.12.12 to
   official Docker CPython 3.12.12. It is kept separate from solver dependencies.
-- /workspace is explicitly created with mode 1777 so platform-assigned non-root
+- /opt/qrepair/workspace is explicitly created with mode 1777 so platform-assigned non-root
   identities can use it. Platform runs should set HOME/CODEX_HOME in their writable
   per-run output directory rather than writing /home/agent/.codex.
 - /app, /logs, /tests, /solution, /harbor and /installed-agent are absolute symlinks
@@ -67,6 +67,7 @@ Credentials and inspection:
 
 Build layout:
 Copy the parent harbor-rollout-platform directory into docker_smoke/harbor-rollout.
+The platform reserves /workspace and /out during Kaniko builds; runtime preparation uses /opt/qrepair/workspace and /opt/codex-dist.
 Use repository root as build context and Dockerfile path
 harbor-rollout/image-source/Dockerfile.H200-base.
 Matrixinfra Recipe accepts repository + complete commit revision + dockerfile.
