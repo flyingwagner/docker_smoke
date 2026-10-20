@@ -4,11 +4,11 @@
 FROM node:22-slim@sha256:efd0ab5780c2d9ab1f0f869571a00d5edb17793bff4cce4a2792e3eb0ffc7562 AS fetch
 RUN npm install -g @openai/codex@0.158.0 && \
     BIN_DIR=$(dirname "$(find /usr/local/lib/node_modules -type f -name codex -size +10M | head -1)") && \
-    mkdir -p /out && \
-    cp -a "${BIN_DIR}/." /out/
+    mkdir -p /opt/codex-dist && \
+    cp -a "${BIN_DIR}/." /opt/codex-dist/
 RUN printf '%s\n' \
-    '167c0148a849d2444f1b5a7fb5f8bb2de1de5ae13a2a504b833fc765980f5cd9  /out/codex' \
-    'a58bd9853daa3b4d51d54e66083d0b3e3e531bd70287fe2463b995d7356d1d44  /out/codex-code-mode-host' \
+    '167c0148a849d2444f1b5a7fb5f8bb2de1de5ae13a2a504b833fc765980f5cd9  /opt/codex-dist/codex' \
+    'a58bd9853daa3b4d51d54e66083d0b3e3e531bd70287fe2463b995d7356d1d44  /opt/codex-dist/codex-code-mode-host' \
     | sha256sum -c -
 
 FROM python:3.12.12-slim-bookworm@sha256:2986c55feb36e6cae00fa1fefb454283e4b33f35e75ff8bdd123b134130be301 AS harbor-python
@@ -23,7 +23,7 @@ RUN apt-get update && \
         ca-certificates curl git ripgrep jq bubblewrap python3 python3-pip python3-venv && \
     rm -rf /var/lib/apt/lists/* && \
     useradd --create-home --shell /bin/bash agent
-COPY --from=fetch /out/ /usr/local/bin/
+COPY --from=fetch /opt/codex-dist/ /usr/local/bin/
 COPY harbor-rollout/image-source/scientific-requirements.lock /opt/qrepair/scientific-requirements.lock
 RUN python3 -m pip install --no-cache-dir --break-system-packages --no-deps \
         -r /opt/qrepair/scientific-requirements.lock && \

@@ -76,3 +76,5 @@ Acceptance built into Dockerfile:
 - npm-provided Codex and code-mode-host must match H200 binary hashes.
 - Solver Python is 3.11.2, scientific package versions/imports match, pip check passes.
 - Coordinator Python is 3.12.12, Harbor is 0.23.0, and its isolated pip check passes.
+
+Platform build integration: temporary Codex binary staging uses /opt/codex-dist. The platform builder reserves /out for its small image-digest record; using it for image payload files triggers EmptyDir eviction.
