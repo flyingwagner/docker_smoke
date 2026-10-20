@@ -1,0 +1,62 @@
+# Build context: docker_smoke repository root; this directory is harbor-rollout/image-source/.
+# Reconstruct the H200 qrepair image from its audited Dockerfile and package inventory.
+# The upstream bases are immutable linux/amd64 manifests resolved on 2026-10-20.
+FROM node:22-slim@sha256:efd0ab5780c2d9ab1f0f869571a00d5edb17793bff4cce4a2792e3eb0ffc7562 AS fetch
+RUN npm install -g @openai/codex@0.158.0 && \
+    BIN_DIR=$(dirname "$(find /usr/local/lib/node_modules -type f -name codex -size +10M | head -1)") && \
+    mkdir -p /out && \
+    cp -a "${BIN_DIR}/." /out/
+RUN printf '%s\n' \
+    '167c0148a849d2444f1b5a7fb5f8bb2de1de5ae13a2a504b833fc765980f5cd9  /out/codex' \
+    'a58bd9853daa3b4d51d54e66083d0b3e3e531bd70287fe2463b995d7356d1d44  /out/codex-code-mode-host' \
+    | sha256sum -c -
+
+FROM python:3.12.12-slim-bookworm@sha256:2986c55feb36e6cae00fa1fefb454283e4b33f35e75ff8bdd123b134130be301 AS harbor-python
+
+FROM debian:bookworm-slim@sha256:a4672c0cb26fbdde88e38fa2dfb6c681942306680e41e4378b28770b6e79ee91
+LABEL org.opencontainers.image.title="qrepair-agent-platform" \
+      org.opencontainers.image.description="Platform reconstruction of H200 qrepair-agent with audited scientific packages" \
+      org.opencontainers.image.version="codex-0.158.0" \
+      ai.gewu.source.h200-image-id="sha256:7a165dff0186ca9b2b59deaf14b1c3da4e01d3b6011f1ab1d5058eba2c3749d4"
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates curl git ripgrep jq bubblewrap python3 python3-pip python3-venv && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd --create-home --shell /bin/bash agent
+COPY --from=fetch /out/ /usr/local/bin/
+COPY harbor-rollout/image-source/scientific-requirements.lock /opt/qrepair/scientific-requirements.lock
+RUN python3 -m pip install --no-cache-dir --break-system-packages --no-deps \
+        -r /opt/qrepair/scientific-requirements.lock && \
+    python3 -m pip check && \
+    python3 -c 'import sys; assert sys.version_info[:3] == (3,11,2), sys.version' && \
+    /usr/local/bin/codex --version
+# Harbor's coordinator needs Python >=3.12. Keep it separate from the solver's
+# /usr/bin/python3 (3.11.2), exactly as H200 has a separate host Harbor venv.
+COPY --from=harbor-python /usr/local/ /opt/harbor-python/
+COPY harbor-rollout/image-source/harbor-requirements.lock /opt/qrepair/harbor-requirements.lock
+RUN printf '%s\n' /opt/harbor-python/lib > /etc/ld.so.conf.d/harbor-python.conf && \
+    ldconfig && \
+    /opt/harbor-python/bin/python3.12 -m venv /opt/harbor-venv && \
+    /opt/harbor-venv/bin/python -m pip install --no-cache-dir --no-deps -r /opt/qrepair/harbor-requirements.lock && \
+    /opt/harbor-venv/bin/python -m pip check && \
+    /opt/harbor-venv/bin/python -c 'import sys, importlib.metadata; assert sys.version_info[:3] == (3,12,12); assert importlib.metadata.version("harbor") == "0.23.0"'
+COPY harbor-rollout/image-source/codex-config.toml /home/agent/.codex/config.toml
+COPY harbor-rollout/image-source/verify-image.py /opt/qrepair/verify-image.py
+COPY harbor-rollout/image-source/h200-image-inventory.json /opt/qrepair/h200-image-inventory.json
+RUN chmod 0755 /usr/local/bin/codex /usr/local/bin/codex-code-mode-host && \
+    chmod 0644 /home/agent/.codex/config.toml /opt/qrepair/* && \
+    chown -R agent:agent /home/agent/.codex && \
+    mkdir -p /workspace && chmod 1777 /workspace && \
+    python3 /opt/qrepair/verify-image.py
+COPY harbor-rollout/runtime/ /opt/harbor-rollout/
+RUN chmod -R a+rX /opt/harbor-rollout && \
+    for path in /app /logs /tests /solution /harbor /installed-agent; do \
+        if [ -e "$path" ] || [ -L "$path" ]; then rmdir "$path"; fi; \
+        ln -s "/tmp/harbor-active${path}" "$path"; \
+    done
+# /tmp/harbor-active is created by the attached backend and points at the current
+# trial's persistent sandbox. Fixed task paths therefore need no prompt rewriting.
+# Intentionally do not put /opt/harbor-venv/bin on PATH: solver tools keep Python 3.11.2.
+USER agent
+WORKDIR /workspace
+ENTRYPOINT ["/opt/harbor-venv/bin/python", "/opt/harbor-rollout/entry.py"]

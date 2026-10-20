@@ -1,0 +1,34 @@
+{
+  "n_attempts": 1,
+  "n_concurrent_trials": 1,
+  "retry": {"max_retries": 0},
+  "quiet": false,
+  "agents": [{
+    "import_path": "codex_goal_deepseek:CodexGoal",
+    "model_name": "self-deepseek-v4.1-flash-1017",
+    "skills": [],
+    "kwargs": {
+      "version": "0.158.0",
+      "max_turns": 300,
+      "total_timeout_sec": 43200,
+      "config": {
+        "model_reasoning_effort": "max",
+        "model_reasoning_summary": "none",
+        "model_auto_compact_token_limit": 900000,
+        "features": {"view_image": false, "goals": true, "unified_exec": true},
+        "web_search": "live"
+      }
+    }
+  }],
+  "verifier": {
+    "override_timeout_sec": 7500,
+    "env": {
+      "JUDGE_MODEL": "self-deepseek-v4.1-flash-1017",
+      "JUDGE_REASONING_EFFORT": "high",
+      "JUDGE_MAX_TOKENS": "98304",
+      "JUDGE_MAX_ATTEMPTS": "2",
+      "JUDGE_REQUEST_TIMEOUT_SEC": "3600",
+      "JUDGE_TOTAL_TIMEOUT_SEC": "7200"
+    }
+  }
+}

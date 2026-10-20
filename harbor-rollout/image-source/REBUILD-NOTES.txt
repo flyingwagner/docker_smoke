@@ -1,0 +1,78 @@
+H200 image reconstruction inputs, audited 2026-10-20
+
+Source image: qrepair-agent:codex-0.158.0
+Docker image/config ID:
+sha256:7a165dff0186ca9b2b59deaf14b1c3da4e01d3b6011f1ab1d5058eba2c3749d4
+This is NOT a registry manifest digest; the source image has no RepoDigests.
+Source Dockerfile: H200 /home/xcai/qrepair/docker/Dockerfile.
+Source size: 1,290,466,432 bytes, linux/amd64, created 2026-10-17T10:57:45Z.
+
+Preserved solver components:
+- /usr/bin/python3 is Python 3.11.2, not 3.13.
+- Codex 0.158.0 and codex-code-mode-host must match the source SHA-256 checksums.
+- The source Dockerfile's apt package names are retained.
+- All 24 non-bootstrap Python distributions installed in the final source image
+  are pinned in scientific-requirements.lock. This includes the extra scientific
+  packages from the image's later docker-commit layer.
+- The agent user, /workspace and provider settings are retained. The final image
+  adds the platform rollout entrypoint /opt/harbor-venv/bin/python
+  /opt/harbor-rollout/entry.py, copying runtime code from harbor-rollout/runtime/.
+
+Harbor coordinator environment:
+- H200 ran Harbor 0.23.0 outside the solver container using an Anaconda Python
+  3.12.12 venv at /home/xcai/venvs/gewu-harbor023.
+- The platform image has an independent /opt/harbor-python (official CPython
+  3.12.12) and /opt/harbor-venv. Its 90 non-bootstrap packages are pinned to the
+  H200 host venv's observed versions in harbor-requirements.lock.
+- Use /opt/harbor-venv/bin/python for the coordinator entrypoint. Do not put this
+  venv first on global PATH: solver python3 must remain /usr/bin/python3 3.11.2.
+- /etc/ld.so.conf.d/harbor-python.conf makes the relocated libpython3.12 visible
+  without replacing system Python or globally injecting LD_LIBRARY_PATH.
+
+Explicit differences from the H200 image:
+- This is a source rebuild, not a byte-identical export/import. The final platform
+  image digest will differ and must be read from the completed Recipe build.
+- H200's original Dockerfile used floating node:22-slim and debian:bookworm-slim.
+  We resolved and pinned their current linux/amd64 manifests. The original base
+  manifest digests are unknown; base OS patches may therefore differ.
+- Apt packages keep the original names and use the pinned base's Debian feeds.
+  Their exact patch versions are not frozen. The full original dpkg list is in
+  h200-image-inventory.json, and Python's 3.11.2 version is asserted during build.
+- Debian-managed pip/setuptools/wheel are not overlaid by pip. The original
+  versions are recorded but not required to match exactly.
+- H200's embedded Codex model default was glm-5.3. The reconstructed default is
+  self-deepseek-v4.1-flash-1017 as explicitly requested by the user. Other copied
+  provider controls are retained; no temperature/top_p/token/reasoning-effort
+  controls were added. The rollout adapter supplies its Responses-to-Chat bridge.
+- The coordinator Python distribution changes from Anaconda CPython 3.12.12 to
+  official Docker CPython 3.12.12. It is kept separate from solver dependencies.
+- /workspace is explicitly created with mode 1777 so platform-assigned non-root
+  identities can use it. Platform runs should set HOME/CODEX_HOME in their writable
+  per-run output directory rather than writing /home/agent/.codex.
+- /app, /logs, /tests, /solution, /harbor and /installed-agent are absolute symlinks
+  into /tmp/harbor-active/<same-name>. The attached backend sets harbor-active to
+  a persistent platform sandbox; this preserves task paths without root privileges
+  or prompt changes. If an upstream image contains one of these paths, the build
+  only replaces it after rmdir confirms that it is an empty directory.
+
+Credentials and inspection:
+- The source config was copied out only from a newly created, non-running probe
+  container, inspected in a private temporary directory, then deleted with that
+  probe. Existing solver/job containers were not touched.
+- The source config contained no secret-valued fields; its safe semantic form
+  and original SHA-256 are in h200-config-audit.json. Only the environment variable
+  name MATRIXLLMROUTER_API_KEY is carried forward, never its value.
+- No auth.json, .env, live job directory, trajectory or API credential is included.
+- Inspection containers used --network none. No LLM call was made.
+
+Build layout:
+Copy the parent harbor-rollout-platform directory into docker_smoke/harbor-rollout.
+Use repository root as build context and Dockerfile path
+harbor-rollout/image-source/Dockerfile.H200-base.
+Matrixinfra Recipe accepts repository + complete commit revision + dockerfile.
+This preparation did not build, publish or register an image, and made no commit.
+
+Acceptance built into Dockerfile:
+- npm-provided Codex and code-mode-host must match H200 binary hashes.
+- Solver Python is 3.11.2, scientific package versions/imports match, pip check passes.
+- Coordinator Python is 3.12.12, Harbor is 0.23.0, and its isolated pip check passes.

@@ -1,0 +1,19 @@
+{
+  "sha256": "82a725adfc7626c97c9af1946136cd747a75bacdd27371068b22886fa911438d",
+  "secret_field_paths": [],
+  "safe_config": {
+    "model": "glm-5.3",
+    "model_provider": "matrixllmrouter",
+    "model_reasoning_summary": "none",
+    "sandbox_mode": "danger-full-access",
+    "model_providers": {
+      "matrixllmrouter": {
+        "name": "MatrixLLM Router",
+        "base_url": "https://matrixllmrouter.gewu-lab.ai/v1",
+        "env_key": "MATRIXLLMROUTER_API_KEY",
+        "requires_openai_auth": false,
+        "wire_api": "responses"
+      }
+    }
+  }
+}

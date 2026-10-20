@@ -1,0 +1,19 @@
+{
+  "Id": "sha256:7a165dff0186ca9b2b59deaf14b1c3da4e01d3b6011f1ab1d5058eba2c3749d4",
+  "RepoTags": [
+    "qrepair-agent:codex-0.158.0"
+  ],
+  "RepoDigests": [],
+  "Created": "2026-10-17T10:57:45.220048286Z",
+  "Architecture": "amd64",
+  "Os": "linux",
+  "Size": 1290466432,
+  "config": {
+    "User": "agent",
+    "WorkingDir": "/workspace",
+    "Entrypoint": [
+      "codex"
+    ],
+    "Cmd": null
+  }
+}

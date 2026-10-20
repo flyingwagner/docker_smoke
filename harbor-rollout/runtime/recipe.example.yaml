@@ -1,0 +1,7 @@
+# Project Recipe template for the BenchmarkJob Harbor rollout runtime.
+name: harbor-rollout-runtime
+build:
+  repository: https://github.com/Callo42/matrixinfra.git
+  revision: FULL_REVIEWED_MATRIXINFRA_COMMIT
+  dockerfile: extensions/platform/harbor-rollout/Dockerfile
+  credentials: build-credentials-PROJECT

@@ -1,0 +1,26 @@
+{
+  "name": "harbor-rollout-UNIQUE",
+  "spec": {
+    "adapter": "harbor-rollout-runtime",
+    "subject": {
+      "endpoint": {
+        "baseUrl": "https://matrixllmrouter.gewu-lab.ai/v1",
+        "model": "deepseek-v4.1-flash",
+        "credential": "matrixllm"
+      }
+    },
+    "dataset": {"name": "harbor-task-bundle-UNIQUE"},
+    "gpus": 0,
+    "resources": {"cpu": "2", "memory": "10Gi"},
+    "timeoutSeconds": 43200,
+    "output": {"path": "/mnt/nvme/projects/PROJECT/evals/harbor-rollout-UNIQUE"},
+    "settings": {
+      "HARBOR_TASK_RELATIVE": "task",
+      "HARBOR_CODEX_MODEL": "deepseek-v4.1-flash",
+      "HARBOR_ATTEMPTS": "1",
+      "HARBOR_CONCURRENCY": "1",
+      "HARBOR_MAX_TURNS": "300",
+      "HARBOR_SOLVER_TIMEOUT_SEC": "43200"
+    }
+  }
+}

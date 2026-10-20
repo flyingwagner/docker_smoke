@@ -1,0 +1,13 @@
+# Credentials are injected at runtime; no key is embedded in this image.
+# The rollout adapter installs its Responses-to-Chat bridge for the self-hosted model.
+model = "self-deepseek-v4.1-flash-1017"
+model_provider = "matrixllmrouter"
+model_reasoning_summary = "none"
+sandbox_mode = "danger-full-access"
+
+[model_providers.matrixllmrouter]
+name = "MatrixLLM Router"
+base_url = "https://matrixllmrouter.gewu-lab.ai/v1"
+env_key = "MATRIXLLMROUTER_API_KEY"
+requires_openai_auth = false
+wire_api = "responses"
