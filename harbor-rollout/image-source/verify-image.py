@@ -3,6 +3,7 @@ import hashlib
 import importlib.metadata
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -19,9 +20,12 @@ def main():
         if name not in excluded:
             actual = importlib.metadata.version(name)
             assert actual == version, f"package mismatch: {name}: {actual} != {version}"
+    process_tools = {name: shutil.which(name) for name in ("ps", "pkill", "pgrep", "free")}
+    assert all(process_tools.values()), f"missing process tools: {process_tools}"
     import numpy, scipy, sympy, mpmath, requests, openai, yaml
     print(json.dumps({"python": sys.version.split()[0], "codex": inventory["codex_version"],
                       "verified_packages": len(inventory["packages"]) - len(excluded),
+                      "process_tools": process_tools,
                       "binary_hashes_match_h200": True}, sort_keys=True))
 
 

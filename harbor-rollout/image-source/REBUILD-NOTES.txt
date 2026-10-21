@@ -38,6 +38,13 @@ Explicit differences from the H200 image:
 - Apt packages keep the original names and use the pinned base's Debian feeds.
   Their exact patch versions are not frozen. The full original dpkg list is in
   h200-image-inventory.json, and Python's 3.11.2 version is asserted during build.
+- Future rebuilds also install procps for ps, pkill, pgrep and free. The no-LLM
+  platform probe harbor-utilities-audit-0280192e45ec on 2026-10-21 used the same
+  image digest as the failed rollout jobs (sha256:c7c25eb7599dbbc728302d601965b4990d9a9645dbdb89ab2d5f006bea356b60)
+  and confirmed that all four tools were absent. One solver's attempted pkill
+  was therefore ineffective; its command suppressed stderr and ignored errors.
+  Image acceptance now requires these tools. This changes future image builds
+  only; existing frozen jobs, provider configuration and sampling controls are unchanged.
 - Debian-managed pip/setuptools/wheel are not overlaid by pip. The original
   versions are recorded but not required to match exactly.
 - H200's embedded Codex model default was glm-5.3. The reconstructed default is

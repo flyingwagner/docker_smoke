@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.title="qrepair-agent-platform" \
       ai.gewu.source.h200-image-id="sha256:7a165dff0186ca9b2b59deaf14b1c3da4e01d3b6011f1ab1d5058eba2c3749d4"
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        ca-certificates curl git ripgrep jq bubblewrap python3 python3-pip python3-venv && \
+        ca-certificates curl git ripgrep jq bubblewrap procps python3 python3-pip python3-venv && \
     rm -rf /var/lib/apt/lists/* && \
     useradd --create-home --shell /bin/bash agent
 COPY --from=fetch /opt/codex-dist/ /usr/local/bin/
