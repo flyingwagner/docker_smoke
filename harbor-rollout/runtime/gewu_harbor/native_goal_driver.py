@@ -101,24 +101,21 @@ class GoalClient:
         raise RuntimeError(f"App Server RPC timed out: {method}")
 
     def run(self):
-        workdir = self.request.get("workdir", "/app")
-        problem_path = str(Path(workdir) / "readme.md")
-        solution_path = str(Path(workdir) / "solution.md")
         self.rpc("initialize", {
             "clientInfo": {"name": "harbor_native_goal", "version": "1.0"},
             "capabilities": {"experimentalApi": True},
         })
         self.send("initialized", notification=True)
         result = self.rpc("thread/start", {
-            "model": self.request["model"], "cwd": workdir,
+            "model": self.request["model"], "cwd": os.getcwd(),
             "approvalPolicy": "never", "sandbox": "danger-full-access",
             "experimentalRawEvents": True,
         })
         self.thread_id = result["thread"]["id"]
         self.goal = self.rpc("thread/goal/set", {
             "threadId": self.thread_id, "status": "active",
-            "objective": f"Resolve the exact research problem in {problem_path} "
-                         f"and save a rigorous self-contained answer in {solution_path}.",
+            "objective": "Resolve the exact research problem in /app/readme.md "
+                         "and save a rigorous self-contained answer in /app/solution.md.",
         })["goal"]
         self.record()
         goal_instruction = (
@@ -126,7 +123,7 @@ class GoalClient:
             "Inspect it with get_goal when needed; do not create a duplicate. "
             "Keep working across automatic continuation turns until the objective is achieved. "
             "Use update_goal(status=complete) only after the requested result is established "
-            f"and saved in {solution_path}. Follow native Goal rules for blockers. "
+            "and saved in /app/solution.md. Follow native Goal rules for blockers. "
             "Save useful partial work promptly. The client safety cap is "
             f"{self.request['max_turns']} turns; Harbor also enforces the task time limit. "
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bridge Codex Responses requests to a gateway's Chat Completions path."""
+"""Inject a validated Responses API output limit for Codex 0.158.0."""
 from __future__ import annotations
 
 import argparse
@@ -27,20 +27,18 @@ _HOP_BY_HOP = {
 }
 
 
-def adapt_request(body: bytes, max_output_tokens: int | None) -> bytes:
-    """Add only the gateway compatibility marker and optional output limit."""
+def inject_max_output_tokens(body: bytes, max_output_tokens: int) -> bytes:
+    """Add the top-level Responses field without changing other parameters."""
     payload = json.loads(body)
     if not isinstance(payload, dict):
         raise ValueError("Responses request body must be a JSON object")
-    payload["use_chat_completions_api"] = True
-    if max_output_tokens is not None:
-        current = payload.get("max_output_tokens")
-        if current is None:
-            payload["max_output_tokens"] = max_output_tokens
-        elif isinstance(current, bool) or not isinstance(current, int) or current < 16:
-            raise ValueError("max_output_tokens must be an integer >= 16")
-        elif current < max_output_tokens:
-            payload["max_output_tokens"] = max_output_tokens
+    current = payload.get("max_output_tokens")
+    if current is None:
+        payload["max_output_tokens"] = max_output_tokens
+    elif isinstance(current, bool) or not isinstance(current, int) or current < 16:
+        raise ValueError("max_output_tokens must be an integer >= 16")
+    elif current < max_output_tokens:
+        payload["max_output_tokens"] = max_output_tokens
     return json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode()
 
 
@@ -89,7 +87,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         is_responses = request_path.rstrip("/").endswith("/responses")
         if is_responses and self.command == "POST":
             try:
-                body = adapt_request(body, self.server.max_output_tokens)
+                body = inject_max_output_tokens(body, self.server.max_output_tokens)
             except (ValueError, json.JSONDecodeError) as error:
                 self.send_error(400, f"invalid Responses request: {error}")
                 return
@@ -160,7 +158,7 @@ class ProxyServer(ThreadingHTTPServer):
         self,
         address,
         upstream_base_url,
-        max_output_tokens: int | None,
+        max_output_tokens,
         timeout,
         max_429_retries=5,
         retry_base_delay=1.0,
@@ -183,7 +181,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--listen", required=True)
     parser.add_argument("--upstream-base-url", required=True)
-    parser.add_argument("--max-output-tokens", type=int)
+    parser.add_argument("--max-output-tokens", required=True, type=int)
     parser.add_argument("--ready-file", required=True)
     parser.add_argument("--timeout", type=float, default=900)
     parser.add_argument(
@@ -195,7 +193,7 @@ def main():
     parser.add_argument("--retry-base-delay", type=float, default=1.0)
     parser.add_argument("--retry-max-delay", type=float, default=30.0)
     args = parser.parse_args()
-    if args.max_output_tokens is not None and args.max_output_tokens < 16:
+    if args.max_output_tokens < 16:
         raise SystemExit("--max-output-tokens must be >= 16")
     host, port_text = args.listen.rsplit(":", 1)
     server = ProxyServer(

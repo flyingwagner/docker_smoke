@@ -7,11 +7,19 @@ and never starts Docker or Kubernetes children.
 
 The runtime is built from the H200-local `qrepair-agent:codex-0.158.0` image
 (digest `sha256:7a165dff0186ca9b2b59deaf14b1c3da4e01d3b6011f1ab1d5058eba2c3749d4`),
-installs Harbor 0.23, and adds the native Goal driver used by the Gewu
-benchmark. For self-hosted DeepSeek 1017, the runtime's local bridge marks
-Responses requests for the gateway's Chat Completions backend; it does not
-change the model's generation parameters. It is a new runtime; it does not use
-the `gewu-bench-runtime` Recipe or its coordinator entrypoint.
+installs Harbor 0.23, and runs the Gewu `NativeGoal` adapter vendored from
+`gewu-bench-maker/harbor-framework` (package `gewu_harbor`, the single
+maintenance source). The adapter is model-independent: the provider, endpoint
+and sampling live in the job configuration. `entry.py` injects the platform
+endpoint URL into the selected `matrixllmrouter` provider and resolves the
+optional model catalog by slug from `models/*.json`. The preferred route is the
+external API model over native Responses with no proxy. Only a
+Chat-Completions-only upstream needs the opt-in `gewu_harbor` response proxy
+(`upstream_api: chat_completions` in the baseline); it preserves the Responses
+event lifecycle for Codex without changing generation parameters. ATIF
+trajectories carry plaintext raw reasoning via the `RawReasoningCodex` policy
+(`step.extra.reasoning_source = "raw_content"`). It is a new runtime; it does
+not use the `gewu-bench-runtime` Recipe or its coordinator entrypoint.
 
 ## Input contract
 
@@ -49,11 +57,14 @@ outputs live beneath `PLATFORM_OUTPUT_PATH/sandboxes/<session>/`. The image's
 resolve through `/tmp/harbor-active`, which the backend creates for this trial.
 It refuses to reuse an anchor belonging to a different trial. Original task
 instructions, Goal paths, and shell commands remain unchanged. The verifier
-receives the same endpoint model. The preserved solver/verifier
-configuration is declared in [runtime-config.baseline.json](runtime-config.baseline.json)
-and copied to the output beside the resolved Harbor configuration. It includes
-the existing reasoning controls, 300-turn/12-hour solver cap, 7,500-second
-verifier cap and verifier request controls. No Harbor trial retries are enabled.
+receives the same endpoint model. The solver/verifier configuration is declared
+in [runtime-config.baseline.json](runtime-config.baseline.json)
+and copied to the output beside the resolved Harbor configuration. It freezes
+the NativeGoal adapter, Codex 0.158.0, the external `deepseek-v4.1-flash-1017`
+model over native Responses without a proxy, reasoning effort `max`, reasoning
+summary `auto`, `web_search: live`, a 1,000,000-token context window, the
+300-turn/12-hour solver cap, the 7,500-second verifier cap and verifier request
+controls. No Harbor trial retries are enabled.
 
 Settings are optional and are recorded in `harbor-job-config.json`:
 

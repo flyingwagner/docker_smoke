@@ -45,14 +45,39 @@ def task_path(dataset: Path) -> Path:
     return candidate
 
 
-def build_config(source: Path, task: Path, output: Path, model: str) -> dict:
+def resolve_model_catalog(source: Path, model: str) -> str | None:
+    """Match a catalog by its slug, not its filename (v41 files lack the dot)."""
+    directory = source / "models"
+    if not directory.is_dir():
+        return None
+    for catalog in sorted(directory.glob("*.json")):
+        try:
+            document = json.loads(catalog.read_text())
+        except (OSError, ValueError):
+            continue
+        entries = document.get("models") if isinstance(document, dict) else None
+        if isinstance(entries, list) and any(
+            isinstance(entry, dict) and entry.get("slug") == model for entry in entries
+        ):
+            return str(catalog)
+    return None
+
+
+def build_config(source: Path, task: Path, output: Path, model: str, endpoint: str) -> dict:
     config = json.loads(BASELINE_PATH.read_text())
     if env_int("HARBOR_ATTEMPTS", 1) != 1 or env_int("HARBOR_CONCURRENCY", 1) != 1:
         raise ValueError("Submit one BenchmarkJob per task and attempt; internal concurrency must be 1")
     agent = config["agents"][0]
+    kwargs = agent["kwargs"]
+    agent_config = kwargs["config"]
+    provider = agent_config["model_providers"][agent_config["model_provider"]]
+    if not endpoint:
+        raise ValueError("The NativeGoal provider requires the platform endpoint URL")
+    provider["base_url"] = endpoint.rstrip("/")
+    kwargs["model_catalog"] = resolve_model_catalog(source, model)
     agent["model_name"] = model
-    agent["kwargs"]["max_turns"] = env_int("HARBOR_MAX_TURNS", 300)
-    agent["kwargs"]["total_timeout_sec"] = env_int("HARBOR_SOLVER_TIMEOUT_SEC", 43200)
+    kwargs["max_turns"] = env_int("HARBOR_MAX_TURNS", 300)
+    kwargs["total_timeout_sec"] = env_int("HARBOR_SOLVER_TIMEOUT_SEC", 43200)
     config["verifier"]["env"]["JUDGE_MODEL"] = model
     config.update({
         "job_name": f"harbor-rollout-{output.name}",
@@ -97,7 +122,7 @@ def main() -> int:
     os.environ.setdefault("JUDGE_MODEL", model)
     os.environ["PYTHONPATH"] = os.pathsep.join((str(source), os.environ.get("PYTHONPATH", "")))
 
-    config = build_config(source, task, output, model)
+    config = build_config(source, task, output, model, endpoint)
     write_json(output / "runtime-config-baseline.json", json.loads(BASELINE_PATH.read_text()))
     write_json(output / "harbor-job-config.json", {
         **config,

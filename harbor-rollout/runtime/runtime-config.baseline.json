@@ -4,18 +4,34 @@
   "retry": {"max_retries": 0},
   "quiet": false,
   "agents": [{
-    "import_path": "codex_goal_deepseek:CodexGoal",
-    "model_name": "self-deepseek-v4.1-flash-1017",
+    "import_path": "gewu_harbor.native_goal:NativeGoal",
+    "model_name": "deepseek-v4.1-flash-1017",
     "skills": [],
     "kwargs": {
       "version": "0.158.0",
       "max_turns": 300,
       "total_timeout_sec": 43200,
       "config": {
+        "model_provider": "matrixllmrouter",
+        "model_providers": {
+          "matrixllmrouter": {
+            "name": "MatrixLab external Responses",
+            "base_url": "",
+            "wire_api": "responses",
+            "env_key": "MATRIXLLMROUTER_API_KEY",
+            "requires_openai_auth": false,
+            "supports_websockets": false
+          }
+        },
+        "model_context_window": 1000000,
         "model_reasoning_effort": "max",
-        "model_reasoning_summary": "none",
+        "model_reasoning_summary": "auto",
         "model_auto_compact_token_limit": 900000,
-        "features": {"view_image": false, "goals": true, "unified_exec": true},
+        "features": {
+          "view_image": false,
+          "goals": true,
+          "unified_exec": true
+        },
         "web_search": "live"
       }
     }
@@ -23,7 +39,7 @@
   "verifier": {
     "override_timeout_sec": 7500,
     "env": {
-      "JUDGE_MODEL": "self-deepseek-v4.1-flash-1017",
+      "JUDGE_MODEL": "deepseek-v4.1-flash-1017",
       "JUDGE_REASONING_EFFORT": "high",
       "JUDGE_MAX_TOKENS": "98304",
       "JUDGE_MAX_ATTEMPTS": "2",
